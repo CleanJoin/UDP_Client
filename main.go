@@ -4,33 +4,36 @@ import (
 	"fmt"
 	"net"
 	"runtime"
-	"strconv"
+	"time"
 )
 
-var CH2 = make(chan string)
+func Writer(ch chan<- []byte, planets []byte) {
 
-func Writer(ch chan<- string) {
-	for i := 0; i < 5000; i++ {
-		ch <- strconv.Itoa(i)
-	}
+	planets[0]++
+	ch <- planets
 
 }
-func Read(ch <-chan string, conn *net.UDPConn) {
+
+func Read(ch <-chan []byte, conn *net.UDPConn) {
 	for msg := range ch {
 		WriteUdp(msg, conn)
 	}
 
 }
 
-func WriteUdp(msg string, conn *net.UDPConn) {
-	conn.Write([]byte(msg))
+func WriteUdp(msg []byte, conn *net.UDPConn) {
+	// time.Sleep(time.Millisecond + 24)
+	conn.Write(msg)
 }
 
 func main() {
+	planets := make([]byte, 1024)
+
 	numcpu := runtime.NumCPU()
 	fmt.Println("NumCPU", numcpu)
-	runtime.GOMAXPROCS(2)
-	ch := make(chan string, 1)
+	// runtime.GOMAXPROCS(3)
+	ch := make(chan []byte, 1024)
+
 	RemoteAddr, err := net.ResolveUDPAddr("udp", ":6000")
 	if err != nil {
 		fmt.Println(err)
@@ -39,12 +42,20 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 	defer conn.Close()
+	for {
+		time.Sleep(time.Millisecond + 24)
+		go func() {
 
-	go Writer(ch)
-	go Read(ch, conn)
+			for i := 0; i < 5000; i++ {
+				Writer(ch, planets)
+			}
+		}()
 
-	var input string
-	fmt.Scan(&input)
+		go Read(ch, conn)
+
+		// var input string
+		// fmt.Scan(&input)
+
+	}
 }
