@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net"
 	"runtime"
+	"time"
 )
 
-func start() {
+func main() {
 	numcpu := runtime.NumCPU()
 	fmt.Println("NumCPU", numcpu)
 	// runtime.GOMAXPROCS(1)
@@ -25,9 +26,8 @@ func start() {
 		fmt.Println(err)
 	}
 	defer conn.Close()
-
 	var j int
-	for j = 0; j < 5; j++ {
+	for j = 0; j < 50; j++ {
 
 		for i := 0; i < 5000; i++ {
 			go func() {
@@ -35,10 +35,7 @@ func start() {
 				ch <- planets
 				conn.Write(<-ch)
 			}()
+			time.Sleep(time.Microsecond)
 		}
-
 	}
-}
-func main() {
-	start()
 }
