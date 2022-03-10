@@ -31,10 +31,9 @@ func start() {
 
 		for i := 0; i < 5000; i++ {
 			go func() {
-
 				planets[0]++
 				ch <- planets
-				go conn.Write(<-ch)
+				conn.Write(<-ch)
 			}()
 		}
 
