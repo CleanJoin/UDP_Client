@@ -4,28 +4,17 @@ import (
 	"fmt"
 	"net"
 	"runtime"
-	"time"
 )
 
-func Writer(ch chan<- []byte, planets []byte) {
-	planets[0]++
-	ch <- planets
-}
-
-func Read(ch <-chan []byte, conn *net.UDPConn) {
-	for msg := range ch {
-		time.Sleep(time.Millisecond + 1)
-		go conn.Write(msg)
-	}
-}
-
-func start() int {
-	planets := make([]byte, 1024)
-
+func start() {
 	numcpu := runtime.NumCPU()
 	fmt.Println("NumCPU", numcpu)
-	// runtime.GOMAXPROCS(2)
+	// runtime.GOMAXPROCS(1)
+	planets := make([]byte, 1)
 	ch := make(chan []byte, 1024)
+
+	m := &runtime.MemStats{}
+	runtime.ReadMemStats(m)
 
 	RemoteAddr, err := net.ResolveUDPAddr("udp", ":6000")
 	if err != nil {
@@ -36,19 +25,20 @@ func start() int {
 		fmt.Println(err)
 	}
 	defer conn.Close()
-	j := 0
-	for j = 0; j < 6; j++ {
 
-		go func() {
-			time.Sleep(time.Millisecond + 24)
-			for i := 0; i < 5000; i++ {
-				Writer(ch, planets)
-			}
-		}()
+	var j int
+	for j = 0; j < 5; j++ {
 
-		go Read(ch, conn)
+		for i := 0; i < 5000; i++ {
+			go func() {
+
+				planets[0]++
+				ch <- planets
+				go conn.Write(<-ch)
+			}()
+		}
+
 	}
-	return j
 }
 func main() {
 	start()
